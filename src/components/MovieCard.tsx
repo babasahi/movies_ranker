@@ -4,7 +4,7 @@ import { getPosterUrl, getPosterFallback } from '../hooks/useMovies';
 
 interface Props {
   movie: Movie;
-  onAdd: (id: number) => void;
+  onAdd: () => void;
   canAdd: boolean;
   inList: boolean;
 }
@@ -23,15 +23,15 @@ export function MovieCard({ movie, onAdd, canAdd, inList }: Props) {
           src={getPosterUrl(movie.posterPath)}
           alt={movie.title}
           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-          onError={(e) => {
-            e.currentTarget.src = getPosterFallback();
-          }}
+          onError={(e) => { e.currentTarget.src = getPosterFallback(); }}
           loading="lazy"
         />
 
-        <div className="absolute top-2 left-2 bg-zinc-950/80 text-amber-400 text-xs font-bold px-1.5 py-0.5 rounded">
-          #{movie.rank}
-        </div>
+        {movie.rank > 0 && (
+          <div className="absolute top-2 left-2 bg-zinc-950/80 text-amber-400 text-xs font-bold px-1.5 py-0.5 rounded">
+            #{movie.rank}
+          </div>
+        )}
 
         <div className="absolute top-2 right-2 bg-zinc-950/80 text-amber-300 text-xs font-bold px-1.5 py-0.5 rounded">
           ★ {movie.rating.toFixed(1)}
@@ -39,7 +39,7 @@ export function MovieCard({ movie, onAdd, canAdd, inList }: Props) {
 
         {!inList && (
           <button
-            onClick={() => onAdd(movie.id)}
+            onClick={onAdd}
             disabled={!canAdd}
             title={canAdd ? 'Add to your list' : 'List is full'}
             className={`absolute bottom-2 right-2 p-1.5 rounded-full transition-all opacity-0 group-hover:opacity-100 ${

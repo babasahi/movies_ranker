@@ -65,35 +65,44 @@ function ErrorScreen({ error }: { error: string }) {
 export default function App() {
   const { movies, loading, error, hasApiKey } = useMovies();
 
-  const [rankedIds, setRankedIds] = useState<number[]>(
-    urlState?.rankedIds ?? []
-  );
-  const [listSize, setListSize] = useState<ListSize>(
-    urlState?.listSize ?? DEFAULT_SIZE
-  );
+  const [rankedIds, setRankedIds] = useState<number[]>(urlState?.rankedIds ?? []);
+  const [listSize, setListSize] = useState<ListSize>(urlState?.listSize ?? DEFAULT_SIZE);
   const [search, setSearch] = useState('');
   const [activeDragId, setActiveDragId] = useState<string | null>(null);
+  // movies added via search that aren't in the top-rated list
+  const [extraMovies, setExtraMovies] = useState<Movie[]>([]);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } })
   );
 
+  const allKnownMovies = useMemo(
+    () => [...movies, ...extraMovies],
+    [movies, extraMovies]
+  );
+
   const rankedMovies = useMemo(
     () =>
       rankedIds
-        .map((id) => movies.find((m) => m.id === id))
+        .map((id) => allKnownMovies.find((m) => m.id === id))
         .filter(Boolean) as Movie[],
-    [rankedIds, movies]
+    [rankedIds, allKnownMovies]
   );
 
   const addMovie = useCallback(
-    (id: number) => {
+    (movie: Movie) => {
+      // store it so we can find it when building rankedMovies
+      if (!movies.find((m) => m.id === movie.id)) {
+        setExtraMovies((prev) =>
+          prev.find((m) => m.id === movie.id) ? prev : [...prev, movie]
+        );
+      }
       setRankedIds((prev) => {
-        if (prev.length >= listSize || prev.includes(id)) return prev;
-        return [...prev, id];
+        if (prev.length >= listSize || prev.includes(movie.id)) return prev;
+        return [...prev, movie.id];
       });
     },
-    [listSize]
+    [listSize, movies]
   );
 
   const removeMovie = useCallback((id: number) => {
@@ -124,8 +133,7 @@ export default function App() {
     setRankedIds((prev) => {
       const oldIndex = prev.indexOf(activeId);
       const newIndex = prev.indexOf(overId);
-      if (oldIndex === -1 || newIndex === -1 || oldIndex === newIndex)
-        return prev;
+      if (oldIndex === -1 || newIndex === -1 || oldIndex === newIndex) return prev;
       return arrayMove(prev, oldIndex, newIndex);
     });
   };
@@ -140,7 +148,7 @@ export default function App() {
   if (error) return <ErrorScreen error={error} />;
 
   const activeMovie = activeDragId
-    ? movies.find((m) => String(m.id) === activeDragId)
+    ? allKnownMovies.find((m) => String(m.id) === activeDragId)
     : null;
 
   return (
@@ -161,7 +169,7 @@ export default function App() {
         <main className="max-w-7xl mx-auto px-4 py-6">
           <div className="flex flex-col lg:grid lg:grid-cols-[1fr_360px] gap-6 items-start">
             <MovieBrowser
-              movies={movies}
+              topMovies={movies}
               rankedIds={rankedIds}
               onAdd={addMovie}
               canAdd={rankedIds.length < listSize}
@@ -194,14 +202,10 @@ export default function App() {
               alt={activeMovie.title}
               className="w-9 object-cover rounded shrink-0"
               style={{ height: '52px' }}
-              onError={(e) => {
-                e.currentTarget.src = getPosterFallback();
-              }}
+              onError={(e) => { e.currentTarget.src = getPosterFallback(); }}
             />
             <div className="min-w-0">
-              <p className="font-semibold text-sm text-white truncate">
-                {activeMovie.title}
-              </p>
+              <p className="font-semibold text-sm text-white truncate">{activeMovie.title}</p>
               <p className="text-zinc-400 text-xs">
                 {activeMovie.year} · ★ {activeMovie.rating.toFixed(1)}
               </p>
