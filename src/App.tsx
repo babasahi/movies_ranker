@@ -10,7 +10,7 @@ import {
   useSensors,
 } from '@dnd-kit/core';
 import { arrayMove, SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
-import { useMovies, getPosterUrl, getPosterFallback } from './hooks/useMovies';
+import { useMovies, getPosterUrl, getPosterFallback, YearRange } from './hooks/useMovies';
 import { MovieBrowser } from './components/MovieBrowser';
 import { RankedList } from './components/RankedList';
 import { Header } from './components/Header';
@@ -68,6 +68,7 @@ export default function App() {
   const [rankedIds, setRankedIds] = useState<number[]>(urlState?.rankedIds ?? []);
   const [listSize, setListSize] = useState<ListSize>(urlState?.listSize ?? DEFAULT_SIZE);
   const [search, setSearch] = useState('');
+  const [yearRange, setYearRange] = useState<YearRange | null>(null);
   const [activeDragId, setActiveDragId] = useState<string | null>(null);
   // movies added via search that aren't in the top-rated list
   const [extraMovies, setExtraMovies] = useState<Movie[]>([]);
@@ -175,6 +176,8 @@ export default function App() {
               canAdd={rankedIds.length < listSize}
               search={search}
               onSearch={setSearch}
+              yearRange={yearRange}
+              onYearRange={setYearRange}
             />
 
             <div className="lg:sticky lg:top-[61px] lg:max-h-[calc(100vh-76px)] lg:overflow-y-auto lg:pb-4">

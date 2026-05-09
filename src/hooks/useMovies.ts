@@ -88,6 +88,33 @@ export function useMovies() {
   return { movies, loading, error, hasApiKey };
 }
 
+export interface YearRange { from: number; to: number }
+
+export function useYearMovies(range: YearRange | null) {
+  const [results, setResults] = useState<Movie[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (!range) { setResults([]); return; }
+
+    setLoading(true);
+    fetch(
+      ...buildRequest(
+        `/discover/movie?sort_by=vote_average.desc` +
+        `&primary_release_date.gte=${range.from}-01-01` +
+        `&primary_release_date.lte=${range.to}-12-31` +
+        `&vote_count.gte=200&language=en-US&page=1`
+      )
+    )
+      .then((r) => r.json())
+      .then((data) => setResults((data.results as unknown[]).map((m) => mapMovie(m))))
+      .catch(() => setResults([]))
+      .finally(() => setLoading(false));
+  }, [range?.from, range?.to]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  return { results, loading };
+}
+
 export function useSearch(query: string) {
   const [results, setResults] = useState<Movie[]>([]);
   const [searching, setSearching] = useState(false);
